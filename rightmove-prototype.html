@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rightmove Property Comparison Tool — Portfolio Prototype</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teal: #00A99D;
+    --teal-dark: #008F85;
+    --teal-light: #E6F7F5;
+    --teal-mid: #00C4B7;
+    --red: #C81E3A;
+    --red-light: #FEF0F2;
+    --red-dark: #7A0F22;
+    --dark: #1A1A2E;
+    --mid: #4A4A6A;
+    --muted: #888899;
+    --border: #E0E0EC;
+    --border-strong: #C0C0D0;
+    --surface: #F8F8FC;
+    --surface2: #F0F0F6;
+    --white: #FFFFFF;
+    --green-light: #C8E6C9;
+    --green-dark: #1B5E20;
+    --amber-light: #FFF9C4;
+    --amber-dark: #F57F17;
+    --orange-light: #FFE0B2;
+    --orange-dark: #E65100;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #F4F4F8;
+    color: var(--mid);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark {
+    width: 32px; height: 32px; background: var(--red);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  }
+  .logo-mark svg { width: 18px; height: 18px; fill: white; }
+  .logo-name { font-size: 20px; font-weight: 700; color: var(--dark); letter-spacing: -0.3px; }
+  .logo-name span { color: var(--red); }
+  .header-badge {
+    font-size: 11px; font-weight: 500; background: var(--teal-light);
+    color: var(--teal-dark); padding: 4px 10px; border-radius: 20px;
+    border: 1px solid var(--teal);
+  }
+
+  /* ── Page shell ── */
+  .page { max-width: 860px; margin: 2rem auto; padding: 0 1.5rem 4rem; }
+
+  /* ── Progress bar ── */
+  .progress-wrap { margin-bottom: 2rem; }
+  .progress-steps { display: flex; gap: 0; }
+  .progress-step {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    position: relative;
+  }
+  .progress-step:not(:last-child)::after {
+    content: ''; position: absolute; top: 14px; left: 50%; width: 100%;
+    height: 2px; background: var(--border);
+  }
+  .progress-step.done::after, .progress-step.active::after { background: var(--teal); }
+  .step-circle {
+    width: 28px; height: 28px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 12px;
+    font-weight: 600; position: relative; z-index: 1;
+    border: 2px solid var(--border); background: var(--white); color: var(--muted);
+  }
+  .progress-step.done .step-circle { background: var(--teal); border-color: var(--teal); color: white; }
+  .progress-step.active .step-circle { background: var(--white); border-color: var(--teal); color: var(--teal); }
+  .step-label { font-size: 11px; color: var(--muted); margin-top: 5px; text-align: center; }
+  .progress-step.active .step-label { color: var(--teal); font-weight: 500; }
+  .progress-step.done .step-label { color: var(--teal); }
+
+  /* ── Panels ── */
+  .panel { display: none; animation: fadeIn 0.2s ease; }
+  .panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--white); border-radius: 12px;
+    border: 1px solid var(--border); padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .card-title { font-size: 17px; font-weight: 600; color: var(--dark); margin-bottom: 4px; }
+  .card-sub { font-size: 13px; color: var(--muted); margin-bottom: 1.25rem; }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--muted); margin: 1.5rem 0 0.75rem;
+  }
+
+  /* ── Must-have stepper ── */
+  .must-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 18px;
+  }
+  .must-label { font-size: 14px; color: var(--dark); font-weight: 500; }
+  .must-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .stepper { display: flex; align-items: center; gap: 14px; }
+  .stepper-btn {
+    width: 32px; height: 32px; border-radius: 50%; border: 1.5px solid var(--border-strong);
+    background: var(--white); color: var(--dark); font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; font-weight: 400; line-height: 1;
+  }
+  .stepper-btn:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-light); }
+  .stepper-val { font-size: 17px; font-weight: 600; color: var(--dark); min-width: 20px; text-align: center; }
+
+  /* ── Sliders ── */
+  .slider-row { margin-bottom: 1.25rem; }
+  .slider-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .slider-name { font-size: 14px; color: var(--dark); font-weight: 500; }
+  .slider-pct { font-size: 14px; font-weight: 700; color: var(--teal); min-width: 40px; text-align: right; }
+  .slider-track { position: relative; height: 8px; border-radius: 4px; background: var(--surface2); }
+  .slider-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; background: var(--teal); transition: width 0.1s; }
+  input[type=range] {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    opacity: 0; cursor: pointer; margin: 0;
+  }
+  .slider-thumb-wrap { position: absolute; top: 50%; transform: translateY(-50%); pointer-events: none; }
+  .slider-thumb {
+    width: 18px; height: 18px; border-radius: 50%; background: var(--white);
+    border: 2px solid var(--teal); box-shadow: 0 1px 4px rgba(0,169,157,0.3);
+    transform: translateX(-50%);
+  }
+
+  /* ── Total bar ── */
+  .total-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); margin-top: 1.5rem;
+  }
+  .total-label { font-size: 13px; color: var(--mid); }
+  .total-val { font-size: 16px; font-weight: 700; }
+  .total-ok { color: var(--teal); }
+  .total-bad { color: var(--red); }
+  .total-hint { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ── CTA buttons ── */
+  .btn-primary {
+    width: 100%; padding: 15px; border-radius: 28px; background: var(--teal);
+    color: white; font-size: 15px; font-weight: 600; border: none; cursor: pointer;
+    margin-top: 1.25rem; transition: background 0.15s; letter-spacing: 0.01em;
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--teal-dark); }
+  .btn-primary:disabled { background: var(--border-strong); color: var(--muted); cursor: not-allowed; }
+  .btn-secondary {
+    padding: 8px 18px; border-radius: 20px; border: 1.5px solid var(--teal);
+    background: var(--white); color: var(--teal); font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-secondary:hover { background: var(--teal-light); }
+
+  /* ── Comparison table ── */
+  .table-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; }
+  .table-title { font-size: 20px; font-weight: 700; color: var(--dark); }
+  .table-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .comp-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .comp-table th, .comp-table td {
+    padding: 10px 12px; font-size: 13px; vertical-align: middle;
+    border-bottom: 1px solid var(--border);
+  }
+  .comp-table thead th {
+    font-weight: 600; font-size: 13px; text-align: center;
+    padding-bottom: 14px; border-bottom: 2px solid var(--border-strong);
+  }
+  .comp-table thead th:first-child { text-align: left; color: var(--muted); font-weight: 400; width: 28%; }
+  .comp-table tbody td { text-align: center; }
+  .comp-table tbody td:first-child { text-align: left; color: var(--muted); font-size: 12px; font-weight: 500; }
+  .winner-col { background: var(--red-light); }
+  .winner-badge {
+    display: inline-block; background: var(--red); color: white;
+    font-size: 10px; font-weight: 600; padding: 2px 9px; border-radius: 20px;
+    margin-bottom: 5px; letter-spacing: 0.02em;
+  }
+  .prop-name { font-size: 13px; font-weight: 700; color: var(--dark); display: block; }
+  .prop-loc { font-size: 11px; color: var(--muted); display: block; margin-top: 2px; }
+  .best-cell {
+    display: inline-block; background: var(--teal-light); color: #04473F;
+    font-weight: 600; border-radius: 6px; padding: 2px 10px; font-size: 12px;
+  }
+  .score-pill {
+    display: inline-block; padding: 6px 16px; border-radius: 20px;
+    font-weight: 700; font-size: 14px;
+  }
+  .score-winner { background: var(--red); color: white; }
+  .score-other {
+    background: var(--surface); color: var(--muted);
+    border: 1px solid var(--border-strong);
+  }
+  .epc {
+    display: inline-block; width: 24px; height: 24px; border-radius: 5px;
+    font-size: 11px; font-weight: 700; line-height: 24px; text-align: center;
+  }
+  .epc-b { background: var(--green-light); color: var(--green-dark); }
+  .epc-c { background: var(--amber-light); color: var(--amber-dark); }
+  .epc-d { background: var(--orange-light); color: var(--orange-dark); }
+  .sec-label-row td {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.07em; color: var(--muted); background: var(--surface);
+    padding: 8px 12px;
+  }
+  .sec-label-row .winner-col { background: #FCEAED; }
+  .dashed { border-top: 1.5px dashed var(--border-strong) !important; }
+  .score-row td { border-top: 2px solid var(--border-strong) !important; }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex; gap: 1.5rem; align-items: center;
+    margin-top: 1rem; font-size: 12px; color: var(--muted); flex-wrap: wrap;
+  }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 5px; vertical-align: middle; }
+
+  /* ── Portfolio note ── */
+  .portfolio-note {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem 1.25rem;
+    font-size: 12px; color: var(--muted); margin-bottom: 1.5rem;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .portfolio-note strong { color: var(--mid); }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .page { padding: 0 1rem 3rem; }
+    .comp-table th, .comp-table td { padding: 8px 6px; font-size: 11px; }
+    .score-pill { padding: 4px 10px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V21H3V9.5z"/></svg>
+    </div>
+    <span class="logo-name">right<span>move</span></span>
+  </div>
+  <span class="header-badge">Portfolio Prototype — Comparison Tool</span>
+</header>
+
+<main class="page">
+
+  <!-- Portfolio note -->
+  <div class="portfolio-note">
+    <span>📋</span>
+    <span><strong>Product Design Case Study</strong> — This is an interactive prototype exploring a weighted property comparison feature for Rightmove. Adjust priority sliders, then compare your shortlist. Built by Rama · 2026.</span>
+  </div>
+
+  <!-- Progress steps -->
+  <div class="progress-wrap">
+    <div class="progress-steps">
+      <div class="progress-step done" id="step1">
+        <div class="step-circle">✓</div>
+        <div class="step-label">Shortlist</div>
+      </div>
+      <div class="progress-step active" id="step2">
+        <div class="step-circle">2</div>
+        <div class="step-label">Set priorities</div>
+      </div>
+      <div class="progress-step" id="step3">
+        <div class="step-circle">3</div>
+        <div class="step-label">Compare</div>
+      </div>
+      <div class="progress-step" id="step4">
+        <div class="step-circle">4</div>
+        <div class="step-label">Decide</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Panel 2: Set priorities ── -->
+  <div class="panel active" id="panel-priorities">
+    <div class="card">
+      <div class="card-title">Set your priorities</div>
+      <div class="card-sub">Tell us what matters most — we'll rank your shortlist accordingly.</div>
+
+      <div class="section-label">Must-haves</div>
+      <div class="must-row">
+        <div>
+          <div class="must-label">Minimum bathrooms</div>
+          <div class="must-sub">Properties below this won't appear in comparison</div>
+        </div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="stepBath(-1)" aria-label="decrease">−</button>
+          <span class="stepper-val" id="bath-val">2</span>
+          <button class="stepper-btn" onclick="stepBath(1)" aria-label="increase">+</button>
+        </div>
+      </div>
+
+      <div class="section-label">Weighted priorities <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:11px;">— drag to allocate 100%</span></div>
+      <div id="sliders"></div>
+
+      <div class="total-bar">
+        <div>
+          <div class="total-label">Total weight allocated</div>
+          <div class="total-hint" id="hint-msg">Weights are balanced</div>
+        </div>
+        <div class="total-val" id="total-display">100%</div>
+      </div>
+
+      <button class="btn-primary" id="cta-btn" onclick="goCompare()">Compare my shortlist →</button>
+    </div>
+  </div>
+
+  <!-- ── Panel 3: Comparison table ── -->
+  <div class="panel" id="panel-compare">
+    <div class="card">
+      <div class="table-header">
+        <div>
+          <div class="table-title">Your shortlist, ranked</div>
+          <div class="table-sub" id="table-sub">Sorted by match score</div>
+        </div>
+        <button class="btn-secondary" onclick="goPriorities()">← Adjust priorities</button>
+      </div>
+      <div id="table-container"></div>
+      <div class="legend">
+        <span><span class="legend-dot" style="background:var(--teal-light);border:1px solid var(--teal);"></span>Best value per row</span>
+        <span><span class="legend-dot" style="background:var(--red);border-radius:50%;"></span>Best match overall</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const criteria = [
+  { id: 'price',     label: 'Price',               val: 30, key: 'price' },
+  { id: 'mycom',     label: 'Your commute',         val: 25, key: 'mycom' },
+  { id: 'ptcom',     label: "Partner's commute",    val: 20, key: 'ptcom' },
+  { id: 'transport', label: 'Transport links',      val: 15, key: 'transport' },
+  { id: 'amenities', label: 'Amenities',            val: 10, key: 'amenities' },
+];
+
+const properties = [
+  {
+    name: 'Flat A', loc: 'Clapham, SW4', sqft: '650 sqft', epc: 'C', baths: 2,
+    price:     { display: '£420,000', raw: 80 },
+    mycom:     { display: '22 min',   raw: 85 },
+    ptcom:     { display: '40 min',   raw: 40 },
+    transport: { display: '5 min walk', raw: 75 },
+    amenities: { display: 'Good',     raw: 70 },
+  },
+  {
+    name: 'Flat B', loc: 'Brixton, SW9', sqft: '720 sqft', epc: 'B', baths: 2,
+    price:     { display: '£395,000', raw: 95 },
+    mycom:     { display: '28 min',   raw: 65 },
+    ptcom:     { display: '18 min',   raw: 90 },
+    transport: { display: '3 min walk', raw: 95 },
+    amenities: { display: 'Good',     raw: 70 },
+  },
+  {
+    name: 'Flat C', loc: 'Stockwell, SW8', sqft: '580 sqft', epc: 'D', baths: 2,
+    price:     { display: '£440,000', raw: 55 },
+    mycom:     { display: '35 min',   raw: 50 },
+    ptcom:     { display: '30 min',   raw: 60 },
+    transport: { display: '9 min walk', raw: 55 },
+    amenities: { display: 'Excellent', raw: 95 },
+  },
+];
+
+let bath = 2;
+
+function stepBath(d) {
+  bath = Math.max(1, Math.min(5, bath + d));
+  document.getElementById('bath-val').textContent = bath;
+}
+
+function getTotal() {
+  return criteria.reduce((s, c) => s + c.val, 0);
+}
+
+function updateSliderUI() {
+  const total = getTotal();
+  const disp = document.getElementById('total-display');
+  const cta = document.getElementById('cta-btn');
+  const hint = document.getElementById('hint-msg');
+
+  disp.textContent = total + '%';
+  if (total === 100) {
+    disp.className = 'total-val total-ok';
+    cta.disabled = false;
+    hint.textContent = 'Weights are balanced — ready to compare';
+  } else if (total < 100) {
+    disp.className = 'total-val total-bad';
+    cta.disabled = true;
+    hint.textContent = (100 - total) + '% remaining to allocate';
+  } else {
+    disp.className = 'total-val total-bad';
+    cta.disabled = true;
+    hint.textContent = (total - 100) + '% over budget — reduce a slider';
+  }
+
+  criteria.forEach(c => {
+    const pct = document.getElementById('pct-' + c.id);
+    const fill = document.getElementById('fill-' + c.id);
+    const thumb = document.getElementById('thumb-' + c.id);
+    if (pct) pct.textContent = c.val + '%';
+    if (fill) fill.style.width = c.val + '%';
+    if (thumb) thumb.style.left = c.val + '%';
+  });
+}
+
+function buildSliders() {
+  const container = document.getElementById('sliders');
+  criteria.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'slider-row';
+    row.innerHTML = `
+      <div class="slider-top">
+        <span class="slider-name">${c.label}</span>
+        <span class="slider-pct" id="pct-${c.id}">${c.val}%</span>
+      </div>
+      <div class="slider-track">
+        <div class="slider-fill" id="fill-${c.id}" style="width:${c.val}%"></div>
+        <div class="slider-thumb-wrap" id="thumb-${c.id}" style="left:${c.val}%">
+          <div class="slider-thumb"></div>
+        </div>
+        <input type="range" min="0" max="100" step="1" value="${c.val}" aria-label="${c.label} weight">
+      </div>
+    `;
+    container.appendChild(row);
+    row.querySelector('input').addEventListener('input', e => {
+      c.val = parseInt(e.target.value);
+      updateSliderUI();
+    });
+  });
+  updateSliderUI();
+}
+
+function computeScores() {
+  const total = getTotal() || 1;
+  return properties
+    .filter(p => p.baths >= bath)
+    .map(p => {
+      let score = 0;
+      criteria.forEach(c => { score += (c.val / total) * p[c.key].raw; });
+      return { ...p, score: Math.round(score) };
+    })
+    .sort((a, b) => b.score - a.score);
+}
+
+function buildTable() {
+  const sorted = computeScores();
+  if (sorted.length === 0) {
+    document.getElementById('table-container').innerHTML = `<p style="color:var(--muted);padding:1rem 0;">No properties match your must-have filters. Try reducing the bathroom requirement.</p>`;
+    return;
+  }
+
+  const winnerScore = sorted[0].score;
+  const bestPerCrit = {};
+  criteria.forEach(c => {
+    bestPerCrit[c.key] = Math.max(...sorted.map(p => p[c.key].raw));
+  });
+
+  let html = `<table class="comp-table"><colgroup><col style="width:28%">`;
+  sorted.forEach(() => html += `<col>`);
+  html += `</colgroup><thead><tr><th></th>`;
+
+  sorted.forEach(p => {
+    const w = p.score === winnerScore;
+    html += `<th class="${w ? 'winner-col' : ''}">
+      ${w ? '<span class="winner-badge">Best match</span><br>' : ''}
+      <span class="prop-name">${p.name}</span>
+      <span class="prop-loc">${p.loc}</span>
+    </th>`;
+  });
+  html += `</tr></thead><tbody>`;
+
+  // Listing details
+  html += `<tr class="sec-label-row"><td colspan="${sorted.length + 1}">Listing details</td></tr>`;
+  html += `<tr><td>Size</td>${sorted.map(p => `<td class="${p.score===winnerScore?'winner-col':''}">${p.sqft}</td>`).join('')}</tr>`;
+  html += `<tr><td>EPC rating</td>${sorted.map(p => `<td class="${p.score===winnerScore?'winner-col':''}"><span class="epc epc-${p.epc.toLowerCase()}">${p.epc}</span></td>`).join('')}</tr>`;
+  html += `<tr><td>Bathrooms</td>${sorted.map(p => `<td class="${p.score===winnerScore?'winner-col':''}">${p.baths}</td>`).join('')}</tr>`;
+
+  // Weighted
+  html += `<tr class="sec-label-row dashed"><td colspan="${sorted.length + 1}">Weighted by your priorities</td></tr>`;
+  criteria.forEach(c => {
+    html += `<tr><td>${c.label} <span style="color:var(--muted);font-size:11px;">${c.val}%</span></td>`;
+    sorted.forEach(p => {
+      const best = p[c.key].raw === bestPerCrit[c.key];
+      const win = p.score === winnerScore;
+      html += `<td class="${win ? 'winner-col' : ''}">${best ? `<span class="best-cell">${p[c.key].display}</span>` : p[c.key].display}</td>`;
+    });
+    html += `</tr>`;
+  });
+
+  // Scores
+  html += `<tr class="score-row"><td style="font-weight:600;color:var(--dark);font-size:13px;">Match score</td>`;
+  sorted.forEach(p => {
+    html += `<td class="${p.score===winnerScore?'winner-col':''}"><span class="score-pill ${p.score===winnerScore?'score-winner':'score-other'}">${p.score}</span></td>`;
+  });
+  html += `</tr></tbody></table>`;
+
+  document.getElementById('table-container').innerHTML = html;
+  document.getElementById('table-sub').textContent =
+    `Sorted by match score · Price ${criteria[0].val}% · Your commute ${criteria[1].val}% · Partner ${criteria[2].val}% · Transport ${criteria[3].val}% · Amenities ${criteria[4].val}%`;
+}
+
+function setProgress(step) {
+  ['step1','step2','step3','step4'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    el.className = 'progress-step';
+    if (i + 1 < step) el.classList.add('done');
+    else if (i + 1 === step) el.classList.add('active');
+    if (i + 1 < step) el.querySelector('.step-circle').textContent = '✓';
+    else el.querySelector('.step-circle').textContent = i + 1;
+  });
+}
+
+function goCompare() {
+  document.getElementById('panel-priorities').classList.remove('active');
+  document.getElementById('panel-compare').classList.add('active');
+  setProgress(3);
+  buildTable();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goPriorities() {
+  document.getElementById('panel-compare').classList.remove('active');
+  document.getElementById('panel-priorities').classList.add('active');
+  setProgress(2);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+buildSliders();
+</script>
+</body>
+</html>
